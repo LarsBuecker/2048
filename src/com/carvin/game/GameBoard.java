@@ -1,9 +1,17 @@
 package com.carvin.game;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Random;
 
 public class GameBoard {
@@ -19,22 +27,96 @@ public class GameBoard {
 	private BufferedImage finalBoard;
 	private int x;
 	private int y;
+	private int score = 0;
+	private int hightScore = 0;
+	private Font scoreFont;
 	
 	private static int SPACING = 10;
 	public static int BOARD_WIDTH = (COLS + 1) * SPACING + COLS * Tile.WIDTH;
 	public static int BOARD_HEIGHT = (ROWS + 1) * SPACING + ROWS * Tile.HEIGHT;
 	
+	private long elapsedMS;
+	private long fastedMS;
+	private long startTime = System.nanoTime();
 	private boolean hasStarted;
+	private String formattedTime = "00:00:000";
+	
+	// Saving
+	private String saveDataPath;
+	private String fileName = "SaveData";
 	
 	public GameBoard(int x, int y) {
+		try {
+//			saveDataPath = System.getProperty("user.home") + "\\2048";
+			saveDataPath = GameBoard.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		scoreFont = Game.main.deriveFont(18f);
 		this.x = x;
 		this.y = y;
 		board = new Tile[ROWS][COLS];
 		gameBoard = new BufferedImage(BOARD_WIDTH, BOARD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		finalBoard = new BufferedImage(BOARD_WIDTH, BOARD_HEIGHT, BufferedImage.TYPE_INT_RGB);
 		
+		loadHighScore();
 		createBoardImage();
 		start();
+	}
+	
+	private void createSaveData() {
+		File file = new File(saveDataPath, fileName);
+		
+		try {
+			FileWriter output = new FileWriter(file);
+			BufferedWriter writer = new BufferedWriter(output);
+			writer.write("" + 0);
+			writer.newLine();
+			writer.write("" + Integer.MAX_VALUE);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void loadHighScore() {
+		File f = new File(saveDataPath, fileName);
+		if(!f.isFile()) {
+			createSaveData();
+		}
+		
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+			hightScore = Integer.parseInt(reader.readLine());
+			fastedMS = Long.parseLong(reader.readLine());
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void setHighScore() {
+		FileWriter output = null;
+		
+		File f = new File(saveDataPath, fileName);
+		try {
+			output = new FileWriter(f);
+			BufferedWriter writer = new BufferedWriter(output);
+			
+			writer.write("" + score);
+			writer.newLine();
+			if(elapsedMS <= fastedMS && won) {
+				writer.write("" + elapsedMS);
+			} else {
+				writer.write("" + fastedMS);
+			}
+			
+			writer.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 	private void createBoardImage() {
@@ -99,10 +181,34 @@ public class GameBoard {
 		
 		g.drawImage(finalBoard, x, y, null);
 		g2d.dispose();
+		
+		g.setColor(Color.lightGray);
+		g.setFont(scoreFont);
+		g.drawString("" + score, 30, 40);
+		g.setColor(Color.red);
+		g.drawString("Best: " + hightScore , Game.WIDTH - DrawUtils.getMessageWidth("Best: " + hightScore, scoreFont, g) - 20, 40);
+		
+		g.setColor(Color.black);
+		g.drawString("Time; " + formattedTime, 30, 90);
+		g.setColor(Color.red);
+		g.drawString("Fastest: " + formattedTime, Game.WIDTH - DrawUtils.getMessageWidth("Fastest: " + formattedTime, scoreFont, g) - 20, 90); 
 	}
 	
 	public void update() {
+		if(!won && !dead) {
+			if(hasStarted) {
+				elapsedMS = (System.nanoTime() - startTime) / 1000000;
+				formattedTime = formatTime(elapsedMS);
+			} else {
+				startTime = System.nanoTime();
+			}
+		}
+		
 		checkKeys();
+		
+		if(score > hightScore) {
+			hightScore = score;
+		}
 		
 		for(int row = 0; row < ROWS; row++) {
 			for(int col = 0; col < COLS; col++) {
@@ -115,6 +221,61 @@ public class GameBoard {
 				}
 			}
 		}
+	}
+	
+	private String formatTime(long millis) {
+		String formattedTime;
+		
+		String hourFormat = "";
+		int hours = (int) (millis / 3600000);
+		if(hours >= 1) {
+			millis -= hours * 3600000;
+			if(hours > 10) {
+				hourFormat = "0"+ hourFormat;
+			} else {
+				hourFormat = "" + hours;
+			}
+			hourFormat += ":";
+		}
+
+		String minuteFormat;
+		int minutes = (int) (millis / 60000);
+		if(minutes >= 1) {
+			millis -= minutes * 60000;
+			if(minutes < 10) {
+				minuteFormat = "0" + minutes;
+			} else {
+				minuteFormat = "" + minutes;
+			}
+		} else {
+			minuteFormat = "00";
+		}
+		
+		String secoundFormat;
+		int secound = (int) (millis / 1000);
+		if(secound >= 1) {
+			millis -= secound * 1000;
+			if(secound < 10) {
+				secoundFormat = "0" + secound;
+			} else {
+				secoundFormat = "" + secound;
+			}
+		} else {
+			secoundFormat = "00";
+		}
+		
+		String milliFormat;
+		if(millis > 99) {
+			milliFormat = "" + millis;
+		} else if(millis > 9) {
+			milliFormat = "0" + millis;
+		} else {
+			milliFormat = "00" + millis;
+		}
+		
+		formattedTime = hourFormat + minuteFormat + ":" + secoundFormat + ":" + milliFormat;
+		
+		return formattedTime;
 	}
 	
 	private void resetPosition(Tile current, int row, int col) {
@@ -194,7 +355,7 @@ public class GameBoard {
 				board[newRow - verticalDirection][newCol - horizontalDirection] = null;
 				board[newRow][newCol].setSlideTo(new Point(newRow, newCol));
 				board[newRow][newCol].setCombineAnimation(true);
-				//TODO add to score
+				score += board[newRow][newCol].getValue();
 			} else {
 				move = false;
 			}
@@ -300,7 +461,7 @@ public class GameBoard {
 		}
 		
 		dead = true;
-		//TODO setHighScore(score);
+		setHighScore();
 	}
 
 	private boolean checkSurroundingTiles(int row, int col, Tile current) {
