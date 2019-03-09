@@ -90,6 +90,7 @@ public class GameBoard {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
 			hightScore = Integer.parseInt(reader.readLine());
 			fastedMS = Long.parseLong(reader.readLine());
+			//System.out.println("Time: " + fastedMS);
 			reader.close();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -191,7 +192,7 @@ public class GameBoard {
 		g.setColor(Color.black);
 		g.drawString("Time; " + formattedTime, 30, 90);
 		g.setColor(Color.red);
-		g.drawString("Fastest: " + formattedTime, Game.WIDTH - DrawUtils.getMessageWidth("Fastest: " + formattedTime, scoreFont, g) - 20, 90); 
+		g.drawString("Fastest: " + formatTime(fastedMS), Game.WIDTH - DrawUtils.getMessageWidth("Fastest: " + formatTime(fastedMS), scoreFont, g) - 20, 90); 
 	}
 	
 	public void update() {
