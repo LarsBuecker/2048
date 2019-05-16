@@ -11,7 +11,7 @@ public class Tile {
 
 	public static final int WIDTH = 80;
 	public static final int HEIGHT = 80;
-	public static final int SLIDE_SPEED = 20;
+	public static final int SLIDE_SPEED = 40;
 	public static final int ARC_WIDTH = 15;
 	public static final int ARC_HEIGHT = 15;
 	

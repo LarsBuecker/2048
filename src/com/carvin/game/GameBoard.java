@@ -47,8 +47,8 @@ public class GameBoard {
 	
 	public GameBoard(int x, int y) {
 		try {
-//			saveDataPath = System.getProperty("user.home") + "\\2048";
-			saveDataPath = GameBoard.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			saveDataPath = System.getProperty("user.home") + "\\2048";
+//			saveDataPath = GameBoard.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
